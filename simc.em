@@ -561,7 +561,7 @@ macro simcEmacsStyleKeyBinding()
 
   Quit progressive search with 'Enter'
   -------------------------------------------------------------------------*/
-macro simcProgressiveSearchForward()
+macro simcProgressiveSearch()
 {
     var hBuf; hBuf = GetCurrentBuf()
     var hWnd; hWnd = GetCurrentWnd()
@@ -571,27 +571,31 @@ macro simcProgressiveSearchForward()
     var cChar
     var sSearchStr; sSearchStr = ""
 
-    while (1)
+    while 1
     {
         iKeyCode = GetKey()
         cChar = CharFromKey(iKeyCode)
 
-        if (iKeyCode == 13)      // Enter - perform search
-        {
+        if iKeyCode == 13       // Enter - perform search
             stop
-        }
-        else if (iKeyCode == 8)  // Backspace
+        else if iKeyCode == 8   // Backspace
         {
-            if (strlen(sSearchStr) > 0)
+            if strlen(sSearchStr) > 0
                 sSearchStr = strtrunc(sSearchStr, strlen(sSearchStr)-1)
+            else
+                continue
         }
         else
             sSearchStr = cat(sSearchStr, cChar)
-        
-        rSearchRes= SearchInBuf(hBuf, sSearchStr, rSel.lnFirst, rSel.ichFirst, 0, 0, 0)
-        
-        if (rSearchRes!= "")
-        {
+
+        rSearchRes = SearchInBuf(hBuf, sSearchStr, rSel.lnFirst, rSel.ichFirst, 0, 1, 0)
+
+        // wrap search
+        if rSearchRes == ""
+            rSearchRes = SearchInBuf(hBuf, sSearchStr, 0, 0, 0, 1, 0)
+
+        if rSearchRes!= ""
+        {   
             ScrollWndToLine(hWnd, rSearchRes.lnFirst)
             SetWndSel(hWnd, rSearchRes)
             LoadSearchPattern(sSearchStr, 0, 0, 0)
@@ -607,7 +611,7 @@ macro simcProgressiveSearchForward()
    a matching part then the macro will jump to the start of the closest
    scope. 
 
-   Currently matches [],(),<>,{}, ""
+   Currently matches [], (), <>, {}
   -------------------------------------------------------------------------*/
 macro simcMatchDelimiter()
 {
@@ -618,7 +622,11 @@ macro simcMatchDelimiter()
     var sClosDelim; sClosDelim = "]})>"
     var sCurrentLine
     var cCurrentChar
-    
+    var iNumofSquareBracket;iNumofSquareBracket = 0
+    var iNumofParentheses;iNumofParentheses = 0
+    var iNumofFrenchQuotes;iNumofFrenchQuotes = 0
+    var iNumofBrace;iNumofBrace = 0
+
     sCurrentLine = GetBufLine(hBuf, rSel.lnFirst)
     cCurrentChar = sCurrentLine[rSel.ichFirst]
         
@@ -627,22 +635,107 @@ macro simcMatchDelimiter()
     else if(__str_contain(sClosDelim, cCurrentChar))
         jump_to_match
     else
-    {
-        while(1)
+    {   
+        while 1
         {
-            LoadSearchPattern("[()\[\]\{\}\<\>]", 0, 1, 0)
+            LoadSearchPattern("[\\[(<{}>)\\]]", 0, 1, 0)
             search_backward
             rSel = GetWndSel(hWnd)
             
             sCurrentLine = GetBufLine(hBuf, rSel.lnFirst)
             cCurrentChar = sCurrentLine[rSel.ichFirst]
-
-            msg("@cCurrentChar@")
             
+            if cCurrentChar == "["
+                iNumofSquareBracket++
+            else if cCurrentChar == "]"
+                iNumofSquareBracket--
+            else if cCurrentChar == "{"
+                iNumofBrace++
+            else if cCurrentChar == "}"
+                iNumofBrace--
+            else if cCurrentChar == "("
+                iNumofParentheses++
+            else if cCurrentChar == ")"
+                iNumofParentheses--
+            else if cCurrentChar == "<"
+                iNumofFrenchQuotes++
+            else if cCurrentChar == ">"
+                iNumofFrenchQuotes--
+
+            if iNumofBrace > 0 || iNumofFrenchQuotes > 0 || iNumofParentheses > 0 || iNumofSquareBracket >0
+                break          
         }
     }
 }
 
+/*-------------------------------------------------------------------------
+  Surround the selection with what you type.
+
+  Hit 'Enter' to quit.
+  -------------------------------------------------------------------------*/
+macro simcSurrounder()
+{
+	var hWnd; hWnd = GetCurrentWnd()
+	var hBuf; hBuf = GetCurrentBuf()
+    var rSel; rSel = GetWndSel(hWnd)
+    var rSelOrig; rSelOrig = rSel
+    var iKeyCode
+    var cChar
+    var sSelection
+    var iLenSel; iLenSel = strlen(GetBufSelText(hBuf))
+    var sSurroundSymbol; sSurroundSymbol = ""
+    var sSurroundSymbolPrev; sSurroundSymbolPrev = sSurroundSymbol
+    
+    if !rSel.fExtended
+        stop
+    
+    while 1
+    {
+        SetWndSel(hWnd, rSel)
+        iKeyCode = GetKey()
+        cChar = CharFromKey(iKeyCode)
+
+        if iKeyCode == 13       // Enter
+            stop
+        else if iKeyCode == 8 && sSurroundSymbolPrev!= ""  // Backspace
+        {
+            sSelection = GetBufSelText(hBuf)
+           
+            if strlen(sSelection) > iLenSel
+            {
+                SetBufSelText(hBuf, strmid(sSelection, 1, strlen(sSelection)-1))
+           
+                // update selection
+                rSel.ichLim = rSel.ichLim - 2
+            }
+        }
+        else
+        {
+            sSurroundSymbol = cat(sSurroundSymbol, cChar)
+
+            if sSurroundSymbol != ""
+            {
+                 sSurroundSymbolPrev = sSurroundSymbol
+                 rSel.ichLim = rSel.ichLim + 2 * strlen(sSurroundSymbol)
+                 sSelection = GetBufSelText(hBuf)
+
+                 // insert surrounder
+                 if sSurroundSymbol == "(" || sSurroundSymbol == ")"
+                     SetBufSelText(hBuf, cat("(", cat(sSelection, ")")))
+                 else if sSurroundSymbol == "[" || sSurroundSymbol == "]"
+                     SetBufSelText(hBuf, cat("[", cat(sSelection, "]")))
+                 else if sSurroundSymbol == "{" || sSurroundSymbol == "}"
+                     SetBufSelText(hBuf, cat("{", cat(sSelection, "}")))
+                 else if sSurroundSymbol == "<" || sSurroundSymbol == ">"
+                     SetBufSelText(hBuf, cat("<", cat(sSelection, ">")))
+                 else
+                     SetBufSelText(hBuf, cat(sSurroundSymbol, cat(sSelection, sSurroundSymbol)))
+                     
+                 sSurroundSymbol = ""
+             }
+        }
+    }
+}
 
 
 /*-------------------------------------------------------------------------

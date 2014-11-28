@@ -37,6 +37,7 @@
       - do-while
       - switch
       - case
+      - default
       - main
 
   For example:
@@ -138,7 +139,7 @@ macro simcInsertSnippet()
         if (rWordinfo.sWord == "if"     || rWordinfo.sWord == "while" ||
             rWordinfo.sWord == "else"   || rWordinfo.sWord == "for"   ||
             rWordinfo.sWord == "switch" || rWordinfo.sWord == "do"    ||
-            rWordinfo.sWord == "case")
+            rWordinfo.sWord == "case"   || rWordinfo.sWord == "default"  )
         {
             SetBufIns(hBuf, rSel.lnFirst, rWordinfo.iChLim)
             rSel.ichFirst = rWordinfo.ichLim
@@ -172,20 +173,26 @@ macro simcInsertSnippet()
             InsBufLine(hBuf, rSel.lnFirst + 1, sIndent # "{")
             InsBufLine(hBuf, rSel.lnFirst + 2, sIndent # "    case @PATTERN@:")
             InsBufLine(hBuf, rSel.lnFirst + 3, sIndent # "        @PATTERN@")
-            InsBufLine(hBuf, rSel.lnFirst + 4, sIndent # "        break")
+            InsBufLine(hBuf, rSel.lnFirst + 4, sIndent # "        break;")
             InsBufLine(hBuf, rSel.lnFirst + 5, sIndent # "}")
+        }
+        else if (rWordinfo.sWord == "case")
+        {
+            SetBufSelText(hBuf, " @PATTERN@:")
+            InsBufLine(hBuf, rSel.lnFirst + 1, sIndent # "    @PATTERN@")
+            InsBufLine(hBuf, rSel.lnFirst + 2, sIndent # "    break;")
+        }
+        else if (rWordinfo.sWord == "default")
+        {
+            SetBufSelText(hBuf, ":")
+            InsBufLine(hBuf, rSel.lnFirst + 1, sIndent # "    @PATTERN@")
+            InsBufLine(hBuf, rSel.lnFirst + 2, sIndent # "    break;")
         }
         else if (rWordinfo.sWord == "do")
         {
             InsBufLine(hBuf, rSel.lnFirst + 1, sIndent # "{")
             InsBufLine(hBuf, rSel.lnFirst + 2, sIndent # "    @PATTERN@")
             InsBufLine(hBuf, rSel.lnFirst + 3, sIndent # "} while (@PATTERN@)")
-        }
-        else if (rWordinfo.sWord == "case")
-        {
-            SetBufSelText(hBuf, " @PATTERN@:")
-            InsBufLine(hBuf, rSel.lnFirst + 1, sIndent # "    @PATTERN@")
-            InsBufLine(hBuf, rSel.lnFirst + 2, sIndent # "    break")
         }
         else if (rWordinfo.sWord == "main")
         {
@@ -418,23 +425,21 @@ macro simcUncommentBlockOut()
     var rSelOrig; rSelOrig = GetWndSel(hWnd)
     var lnCurrentLine; lnCurrentLine = rSelOrig.lnFirst
     var sCurrentLine
-    var iChar
     var TOKEN_BEG; TOKEN_BEG = "/*"
     var TOKEN_MID; TOKEN_MID = "*"
     var TOKEN_END; TOKEN_END = "*/"
     var TAB; TAB = CharFromAscii(9)
     var SPACE; SPACE = CharFromAscii(32)
         
-    while (lnCurrentLine <= rSelOrig.lnLast)
+    while lnCurrentLine <= rSelOrig.lnLast
     {
-        iChar = 0
         sCurrentLine = GetBufLine(hBuf, lnCurrentLine)
-        if (__str_only_contain(sCurrentLine, TOKEN_MID # SPACE # TAB)) // performance consideration
+        if __str_only_contain(sCurrentLine, TOKEN_MID # SPACE # TAB) // performance consideration
         {
             PutBufLine(hBuf, lnCurrentLine, "")
             lnCurrentLine++
         }
-        else if (__str_only_contain(sCurrentLine, TOKEN_BEG # TOKEN_END # SPACE # TAB)) // performance consideration
+        else if __str_only_contain(sCurrentLine, TOKEN_BEG # TOKEN_END # SPACE # TAB) // performance consideration
         {
             DelBufLine(hBuf, lnCurrentLine)
 
@@ -445,20 +450,16 @@ macro simcUncommentBlockOut()
         }
         else
         {
-            if (__str_begin_with(sCurrentLine, TOKEN_BEG))    
-            {
-                   sCurrentLine = __str_lstrip(sCurrentLine, TOKEN_BEG # TAB # SPACE)
-               }                
+            if __str_begin_with(sCurrentLine, TOKEN_BEG)    
+                sCurrentLine = __str_lstrip(sCurrentLine, TOKEN_BEG # TAB # SPACE)
         
-            if (__str_begin_with(sCurrentLine, TOKEN_MID))
+            if __str_begin_with(sCurrentLine, TOKEN_MID)
             {
                 sCurrentLine = __str_lstrip(sCurrentLine, TOKEN_MID # TAB # SPACE)
             }
 
-            if (__str_end_with(sCurrentLine, TOKEN_END))
-            {
+            if __str_end_with(sCurrentLine, TOKEN_END)
                 sCurrentLine = __str_rstrip(sCurrentLine, TOKEN_END # TAB # SPACE)
-            }   
 
             PutBufLine(hBuf, lnCurrentLine, sCurrentLine)
             lnCurrentLine++
@@ -542,17 +543,24 @@ macro simcEmacsStyleKeyBinding()
     // Map the functionKey code into a simple character.
     ch = ToUpper(CharFromKey(functionKey))
     
-    if (ch == "D")
-    {
-        // Ctrl+K, followed by Ctrl+D
-        if (IsCtrlKeyDown(functionKey))
-            // run the "Paste Line" command
-            Paste_Line
-        
-        // Ctrl+K, followed by "D"
-        else
-            Cut_Line
-    }
+    if IsCtrlKeyDown(functionKey) && ch == "W"
+        simcCloseAllNonDirtyWindow
+    else if IsCtrlKeyDown(functionKey) && ch == "S"
+        simcSurrounder
+    else if IsCtrlKeyDown(functionKey) && ch == "C"
+        simcCommentLineOut
+    else if !IsCtrlKeyDown(functionKey) && ch == "C"
+        simcUncommentLineOut
+    else if IsCtrlKeyDown(functionKey) && ch == "B"
+        simcCommentBlockOut
+    else if !IsCtrlKeyDown(functionKey) && ch == "B"
+        simcUncommentBlockOut
+    else if IsCtrlKeyDown(functionKey) && ch == "T"
+        simcTrimSpaces
+    else if IsCtrlKeyDown(functionKey) && ch == "M"
+        simcMatchDelimiter
+    else if IsCtrlKeyDown(functionKey) && ch == "I"
+        simcBatchInsert
 }
 
 /*-------------------------------------------------------------------------
@@ -588,11 +596,11 @@ macro simcProgressiveSearch()
         else
             sSearchStr = cat(sSearchStr, cChar)
 
-        rSearchRes = SearchInBuf(hBuf, sSearchStr, rSel.lnFirst, rSel.ichFirst, 0, 1, 0)
+        rSearchRes = SearchInBuf(hBuf, sSearchStr, rSel.lnFirst, rSel.ichFirst, 0, 0, 0)
 
         // wrap search
         if rSearchRes == ""
-            rSearchRes = SearchInBuf(hBuf, sSearchStr, 0, 0, 0, 1, 0)
+            rSearchRes = SearchInBuf(hBuf, sSearchStr, 0, 0, 0, 0, 0)
 
         if rSearchRes!= ""
         {   
@@ -615,8 +623,8 @@ macro simcProgressiveSearch()
   -------------------------------------------------------------------------*/
 macro simcMatchDelimiter()
 {
-	var hWnd; hWnd = GetCurrentWnd()
-	var hBuf; hBuf = GetCurrentBuf()
+    var hWnd; hWnd = GetCurrentWnd()
+    var hBuf; hBuf = GetCurrentBuf()
     var rSel; rSel = GetWndSel(hWnd)
     var sOpenDelim; sOpenDelim = "[{(<"
     var sClosDelim; sClosDelim = "]})>"
@@ -675,8 +683,8 @@ macro simcMatchDelimiter()
   -------------------------------------------------------------------------*/
 macro simcSurrounder()
 {
-	var hWnd; hWnd = GetCurrentWnd()
-	var hBuf; hBuf = GetCurrentBuf()
+    var hWnd; hWnd = GetCurrentWnd()
+    var hBuf; hBuf = GetCurrentBuf()
     var rSel; rSel = GetWndSel(hWnd)
     var rSelOrig; rSelOrig = rSel
     var iKeyCode
@@ -697,11 +705,11 @@ macro simcSurrounder()
 
         if iKeyCode == 13       // Enter
             stop
-        else if iKeyCode == 8 && sSurroundSymbolPrev!= ""  // Backspace
+        else if iKeyCode == 8 // && sSurroundSymbolPrev!= ""  // Backspace
         {
             sSelection = GetBufSelText(hBuf)
            
-            if strlen(sSelection) > iLenSel
+            if strlen(sSelection) >= 2
             {
                 SetBufSelText(hBuf, strmid(sSelection, 1, strlen(sSelection)-1))
            
@@ -739,7 +747,7 @@ macro simcSurrounder()
 
 
 /*-------------------------------------------------------------------------
-  Return the first different part from string sA, sB must be a substring 
+  Return the FIRST different part from string sA, sB must be a substring 
   of sA.
 
   for exampele:
@@ -756,9 +764,9 @@ macro __str_subtract(sA, sB)
     var iCh; iCh = 0
 
     if iLenA <= iLenB // sB must be a substing of sA
-        return Nil
+        return ""
 
-    while(iCh <= iLim)
+    while iCh <= iLim
     {
         i = 0
         while(sA[iCh+i] == sB[i])
@@ -786,10 +794,10 @@ macro __str_padding(sLine, iLen)
 
     iLenDiff = iLenLine - iLen
     
-    if (iLenDiff >= 0)
+    if iLenDiff >= 0
         return sLine
 
-    while (iLenDiff < 0)
+    while iLenDiff < 0
     {
         sLine = cat(sLine, SPACE)
         iLenDiff++
@@ -824,14 +832,11 @@ macro __str_contain(sStr, sSubStr)
     var iChar; iChar = 0
     var iChStrLim; iChStrLim = iStrLen - iSubStrLen
 
-    // Though every string contains a trailing ""
-    // a False is returned for "" is not considered 
-    // as a part of literal string, and it's meanless 
-    // to test if a string contains a ""    
+    // every string contains a trailing ""
     if(iSubStrLen == 0)
-        return False
+        return True
         
-    while (iChar < iChStrLim)
+    while (iChar <= iChStrLim)
     {
         if (iSubStrLen != 1)
         {
@@ -880,30 +885,19 @@ macro __str_begin_with(sStr, sSubStr)
 {
     var TAB; TAB = CharFromAscii(9)
     var SPACE; SPACE = CharFromAscii(32)
+
+    sStr = __str_lstrip(sStr, TAB # SPACE)
+    sSubStr = __str_lstrip(sSubStr, TAB # SPACE)
     var iStrLen; iStrLen = strlen(sStr)
     var iSubStrLen; iSubStrLen = strlen(sSubStr)
-    var iChStr; iChStr = 0
-    var iChSubStr; iChSubStr = 0
-    var cCharInStr
-    var iChStrLim; iChStrLim = iStrLen - iSubStrLen
-    
-    while (iChStr <= iChStrLim)
-    {
-        cCharInStr = sStr[iChStr]
 
-        if (cCharInStr == TAB || cCharInStr == SPACE)
-        {
-            iChStr++
-        }
-        else
-        {
-            if (strmid(sStr, iChStr, iChStr+iSubStrLen) == sSubStr)
-                return True
-            else
-                return False
-        }
+    if iSubStrLen > iStrLen
+        return False
         
-    }
+    if (strmid(sStr, 0, iSubStrLen) == sSubStr)
+        return True
+    else
+        return False
 }
 
 /*-------------------------------------------------------------------------
@@ -913,31 +907,23 @@ macro __str_begin_with(sStr, sSubStr)
   -------------------------------------------------------------------------*/
 macro __str_end_with(sStr, sSubStr)
 {
+
     var TAB; TAB = CharFromAscii(9)
     var SPACE; SPACE = CharFromAscii(32)
+
+    sStr = __str_rstrip(sStr, TAB # SPACE)
+    sSubStr = __str_rstrip(sSubStr, TAB # SPACE)
     var iStrLen; iStrLen = strlen(sStr)
     var iSubStrLen; iSubStrLen = strlen(sSubStr)
-    var iChStr; iChStr = 0
-    var iChSubStr; iChSubStr = 0
-    var cCharInStr
-    var iChStrLim; iChStrLim = iStrLen - iSubStrLen
 
-    while (iChStr <= iChStrLim)
-    {
-        cCharInStr = sStr[iStrLen-iChStr]
+    if iSubStrLen > iStrLen
+        return False
+        
+    if (strmid(sStr, iStrLen-iSubStrLen, iStrLen) == sSubStr)
+        return True
+    else
+        return False
 
-        if (cCharInStr == TAB || cCharInStr == SPACE)
-        {
-            iChStr++
-        }
-        else
-        {
-            if (strmid(sStr, iStrLen-iChStr-iSubStrLen, iStrLen-iChStr) == sSubStr)
-                return True
-            else
-                return False
-        }
-    }
 }
 
 /*-------------------------------------------------------------------------
@@ -947,20 +933,17 @@ macro __str_end_with(sStr, sSubStr)
 macro __str_lstrip(sStr, sSubStr)
 {
     var iStrLen; iStrLen = strlen(sStr)
-    var iStrLim;
     var cCharInStr
     var iCharInStr; iCharInStr = 0
 
-    if (iStrLen == 0)
-        return ""
-
-    iStrLim = iStrLen - 1
-    while(iCharInStr <= iStrLim)
+    while iCharInStr < iStrLen
     {
         cCharInStr = sStr[iCharInStr]
-        
-        if !(__str_contain(sSubStr, cCharInStr))
+        s = strmid(sStr, iCharInStr, iStrLen)
+       if !__str_contain(sSubStr, cCharInStr)
+        {
             return strmid(sStr, iCharInStr, iStrLen)
+        }
 
         iCharInStr++
     }

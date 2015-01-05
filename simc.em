@@ -9,8 +9,7 @@
  *
  * License: MIT License
  *
- * Revision History:
- *     2014-11-09 17:35:30 - v0.0.1, file created.
+ * Last Modified: 2014-11-09 17:35:30
  * 
  * Usage:
  *     1. Add this file to your project, or to the base project so
@@ -21,7 +20,7 @@
  *
  *     3. Enjoy the macros!
  * 
- * Copyright (c) 2014, Jia Shi
+ * Copyright (c) 2014-2015, Jia Shi
  **************************************************************/
 
 /*-------------------------------------------------------------------------
@@ -557,7 +556,7 @@ macro simcEmacsStyleKeyBinding()
         simcUncommentBlockOut
     else if IsCtrlKeyDown(functionKey) && ch == "T"
         simcTrimSpaces
-    else if IsCtrlKeyDown(functionKey) && ch == "M"
+    else if IsCtrlKeyDown(functionKey) && ch == "D"
         simcMatchDelimiter
     else if IsCtrlKeyDown(functionKey) && ch == "I"
         simcBatchInsert

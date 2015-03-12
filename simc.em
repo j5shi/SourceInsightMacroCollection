@@ -23,6 +23,12 @@
  * Copyright (c) 2014-2015, Jia Shi
  **************************************************************/
 
+macro simcInsertSnippetNew()
+{
+    var hWnd; hWnd = OpenBuf("snippet.txt")
+    shellexecute("cmd")
+}
+
 /*-------------------------------------------------------------------------
   Automatically insert code snippet.
     
@@ -537,28 +543,31 @@ macro simcBatchInsert()
   -------------------------------------------------------------------------*/
 macro simcEmacsStyleKeyBinding()
 {
+    var hBuf; hBuf = GetCurrentBuf()
+    var hWnd; hWnd = GetCurrentWnd()
+    var rSel; rSel = GetWndSel(hWnd)
     var functionKey; functionKey = GetKey()
     
     // Map the functionKey code into a simple character.
-    ch = ToUpper(CharFromKey(functionKey))
+    ch = CharFromKey(functionKey)
     
-    if IsCtrlKeyDown(functionKey) && ch == "W"
+    if ch == "w"
         simcCloseAllNonDirtyWindow
-    else if IsCtrlKeyDown(functionKey) && ch == "S"
+    else if ch == "s"
         simcSurrounder
-    else if IsCtrlKeyDown(functionKey) && ch == "C"
+    else if ch == "c"
         simcCommentLineOut
-    else if !IsCtrlKeyDown(functionKey) && ch == "C"
-        simcUncommentLineOut
-    else if IsCtrlKeyDown(functionKey) && ch == "B"
+    else if ch == "C"
+        simcUncommentLineOut  
+    else if ch == "b"
         simcCommentBlockOut
-    else if !IsCtrlKeyDown(functionKey) && ch == "B"
+    else if ch == "B"
         simcUncommentBlockOut
-    else if IsCtrlKeyDown(functionKey) && ch == "T"
+    else if ch == "t"
         simcTrimSpaces
-    else if IsCtrlKeyDown(functionKey) && ch == "D"
+    else if ch == "d"
         simcMatchDelimiter
-    else if IsCtrlKeyDown(functionKey) && ch == "I"
+    else if ch == "i"
         simcBatchInsert
 }
 

@@ -619,6 +619,69 @@ macro simcProgressiveSearch()
     }
 }
 
+macro simcJumpForward()
+{
+    var hBuf; hBuf = GetCurrentBuf()
+    var hWnd; hWnd = GetCurrentWnd()
+    var rSel; rSel = GetWndSel(hWnd)
+    var rSearchRes
+    var iKeyCode
+    var cChar
+    var sSearchStr; sSearchStr = ""
+
+    while 1
+    {
+        iKeyCode = GetKey()
+        cChar = CharFromKey(iKeyCode)
+
+        if iKeyCode == 13       // Enter - perform search
+            break
+        else if iKeyCode == 8   // Backspace
+        {
+            if strlen(sSearchStr) > 0
+                sSearchStr = strtrunc(sSearchStr, strlen(sSearchStr)-1)
+            else
+                continue
+        }
+        else
+            sSearchStr = cat(sSearchStr, cChar)
+
+    }
+    LoadSearchPattern(sSearchStr, 0, 0, 0)
+    Search_Forward
+}
+
+macro simcJumpBackward()
+{
+    var hBuf; hBuf = GetCurrentBuf()
+    var hWnd; hWnd = GetCurrentWnd()
+    var rSel; rSel = GetWndSel(hWnd)
+    var rSearchRes
+    var iKeyCode
+    var cChar
+    var sSearchStr; sSearchStr = ""
+
+    while 1
+    {
+        iKeyCode = GetKey()
+        cChar = CharFromKey(iKeyCode)
+
+        if iKeyCode == 13       // Enter - perform search
+            break
+        else if iKeyCode == 8   // Backspace
+        {
+            if strlen(sSearchStr) > 0
+                sSearchStr = strtrunc(sSearchStr, strlen(sSearchStr)-1)
+            else
+                continue
+        }
+        else
+            sSearchStr = cat(sSearchStr, cChar)
+
+    }
+    LoadSearchPattern(sSearchStr, 0, 0, 0)
+    Search_Backward
+}
 
 /*-------------------------------------------------------------------------
    Finds matching scoping delimiters and jumps to them.

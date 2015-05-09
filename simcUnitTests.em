@@ -11,7 +11,7 @@ macro runAllUnitTests()
     // unitTest_str_padding()
     // unitTest_str_subtract()
 }
-
+            
 macro unitTest_str_subtract()
 {
     sSub = " * #include <IfAaSrio.h>"

@@ -23,12 +23,6 @@
  * Copyright (c) 2014-2015, Jia Shi
  **************************************************************/
 
-macro simcInsertSnippetNew()
-{
-    var hWnd; hWnd = OpenBuf("snippet.txt")
-    shellexecute("cmd")
-}
-
 /*-------------------------------------------------------------------------
   Automatically insert code snippet.
     
@@ -205,6 +199,25 @@ macro simcInsertSnippet()
             InsBufLine(hBuf, rSel.lnFirst + 1, sIndent # "{")
             InsBufLine(hBuf, rSel.lnFirst + 2, sIndent # "    return @PATTERN@;")
             InsBufLine(hBuf, rSel.lnFirst + 3, sIndent # "}")
+        }
+        else if (rWordinfo.sWord == "add")
+        {
+            delete_line
+            InsBufLine(hBuf, rSel.lnFirst, sIndent # "/* Begin Add by: @PATTERN@ PN: @PATTERN@ Dsc: @PATTERN@ */")
+            InsBufLine(hBuf, rSel.lnFirst + 1, sIndent # "/* End Add PN: @PATTERN@ */")
+
+        }
+        else if (rWordinfo.sWord == "mod")
+        {
+            delete_line
+            InsBufLine(hBuf, rSel.lnFirst, sIndent # "/* Begin Modify by: @PATTERN@ PN: @PATTERN@ Dsc: @PATTERN@ */")
+            InsBufLine(hBuf, rSel.lnFirst + 1, sIndent # "/* End Modify PN: @PATTERN@ */")
+
+        }
+        else if (rWordinfo.sWord == "del")
+        {
+            delete_line
+            InsBufLine(hBuf, rSel.lnFirst, sIndent # "/* Delete by: @PATTERN@ PN: @PATTERN@ Dsc: @PATTERN@ */")
         }
         else
         {

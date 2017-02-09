@@ -1,7 +1,9 @@
 Source Insight Macro Collection
 ===============================
 
-A collection of Source Insight macros.
+A collection of Source Insight macros which make coding easier and more enjoyable.
+
+It tends to be an example of developing your own macros, that's why there's not much macros in it.
 
 ## Installation
 

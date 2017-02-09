@@ -1024,7 +1024,8 @@ macro __str_lstrip(sStr, sSubStr)
     {
         cCharInStr = sStr[iCharInStr]
         s = strmid(sStr, iCharInStr, iStrLen)
-       if !__str_contain(sSubStr, cCharInStr)
+
+        if !__str_contain(sSubStr, cCharInStr)
         {
             return strmid(sStr, iCharInStr, iStrLen)
         }
@@ -1052,7 +1053,8 @@ macro __str_rstrip(sStr, sSubStr)
     {
         cCharInStr = sStr[iCharInStr]
         
-        if !(__str_contain(sSubStr, cCharInStr))
+
+        if !(__str_contain(sSubStr, cCharInStr))
             return strmid(sStr, 0, iCharInStr+1)
             
         iCharInStr--
